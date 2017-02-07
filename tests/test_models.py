@@ -1,16 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-test_django-poeditor-com-field
-------------
-
-Tests for `django-poeditor-com-field` models module.
-"""
-
 from django.test import TestCase
-
-from poeditor_com_field import models
+from poeditor_com_field.models import *
 
 
 class TestPoeditor_com_field(TestCase):
@@ -18,8 +10,9 @@ class TestPoeditor_com_field(TestCase):
     def setUp(self):
         pass
 
-    def test_something(self):
-        pass
-
     def tearDown(self):
         pass
+    
+    def test_something(self):
+        bloom_filter, _ = BloomFilter.objects.get_or_create(key='existing_terms')
+        

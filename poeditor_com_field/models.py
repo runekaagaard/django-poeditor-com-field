@@ -2,11 +2,7 @@
 
 from django.db import models
 
-from model_utils.models import TimeStampedModel
 
-
-class BloomFilter(TimeStampedModel):
-    pass
-    
-
-
+class BloomFilter(models.Model):
+    key = models.TextField('Key')
+    data = models.TextField('Data')
