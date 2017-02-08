@@ -6,7 +6,6 @@ from poeditor_com_field.models import *
 
 
 class TestPoeditor_com_field(TestCase):
-
     def setUp(self):
         pass
 
