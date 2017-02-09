@@ -41,13 +41,19 @@ def sync_terms():
     Loops over all terms and syncs with poeditor.com
     '''
     pass
-
 """
 
 
-class Terms(models.Model):
-    hash =
-    shipped =
-    content_type_id
-    object_id
-    field_name
+class Term(models.Model):
+    hash = models.CharField(max_length=40, db_index=True)
+    shipped = models.BooleanField(default=False)
+    pending_deletion = models.BooleanField(default=False)
+    content_type_id = models.IntegerField()
+    object_id = models.IntegerField()
+    field_name = models.TextField()
+
+    def __unicode__(self):
+        return ("Term(hash={}, shipped={}, pending_deletion={}, content_type_id={}, "
+                "object_id={}, field_name={})").format(self.hash, self.shipped,
+            self.pending_deletion, self.content_type_id, self.object_id,
+            self.field_name)

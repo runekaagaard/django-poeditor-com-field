@@ -1,5 +1,6 @@
 # -*- coding: utf-8
 from __future__ import unicode_literals, absolute_import
+import os
 
 import django
 
@@ -23,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sites",
     "poeditor_com_field",
+    "tests"
 ]
 
 SITE_ID = 1
@@ -31,3 +33,9 @@ if django.VERSION >= (1, 10):
     MIDDLEWARE = ()
 else:
     MIDDLEWARE_CLASSES = ()
+
+CELERY_ALWAYS_EAGER = True
+
+POEDITOR_API_TOKEN = os.environ['TEST_POEDITOR_API_TOKEN']
+POEDITOR_PROJECT_ID = os.environ['TEST_POEDITOR_PROJECT_ID']
+POEDITOR_CONTEXT = 'FieldInDatabase'
