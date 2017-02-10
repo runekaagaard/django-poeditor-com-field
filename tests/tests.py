@@ -13,19 +13,15 @@ class TestPoeditor_com_field(TestCase):
 
     def tearDown(self):
         pass
-    
-    def test_something(self):
-        obj = TestModel(title="title1")
-        obj.save()
-        self.assertEqual(obj.pk, 1)
 
-        print "CREATING"
-        for link in Link.objects.all():
-            print link
-
-        obj.title = "title2"
+    def test_no_duplicates(self):
+        TestModel.objects.create(title="title1")
+        obj = TestModel.objects.create(title="title2")
+        self.assertEqual(Link.objects.count(), 2)
+        obj.title = "title3"
         obj.save()
-        print
-        print "UPDATING"
-        for link in Link.objects.all():
-            print link
+        self.assertEqual(Link.objects.count(), 2)
+
+    def test_links_are_marked_as_posted(self):
+        TestModel.objects.create(title="title1")
+        self.assertTrue(Link.objects.get(pk=1).posted)

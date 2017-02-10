@@ -20,17 +20,8 @@ def _terms(instance):
     } for x in instance._poeditor_com_field_fields]
 
 
-def _pre_save_signal(sender, instance=None, **kwargs):
-    if instance.pk is not None:
-        instance.__poeditor_com_field_cached_instance = sender.objects.get(
-            pk=instance.pk)
-
-
 def _post_save_signal(sender, created=None, instance=None, **kwargs):
-    if created:
-        add_terms(_terms(instance), instance)
-    else:
-        print "UPDATE STUFF"
+    update_terms(_terms(instance), instance)
 
 
 def _content_type(instance):
@@ -43,6 +34,9 @@ def _posted_hash_exists(hash):
 
 @task
 def _post_terms(terms, link_pks):
+    if len(terms) == 0:
+        return
+    
     _client().add_terms(settings.POEDITOR_PROJECT_ID, [
         {
             "term": x['value'],
@@ -72,8 +66,7 @@ def _client():
     return POEditorAPI(api_token=settings.POEDITOR_API_TOKEN)
 
 
-@task
-def add_terms(terms, instance):
+def update_terms(terms, instance):
     links = [_save_link(x, instance) for x in terms]
     unposted_terms = [term for link, term in izip(links, terms)
                       if link.posted is False]
