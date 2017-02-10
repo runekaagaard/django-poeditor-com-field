@@ -44,16 +44,20 @@ def sync_terms():
 """
 
 
-class Term(models.Model):
+class Link(models.Model):
     hash = models.CharField(max_length=40, db_index=True)
-    shipped = models.BooleanField(default=False)
+    posted = models.BooleanField(default=False)
     pending_deletion = models.BooleanField(default=False)
     content_type_id = models.IntegerField()
     object_id = models.IntegerField()
     field_name = models.TextField()
 
     def __unicode__(self):
-        return ("Term(hash={}, shipped={}, pending_deletion={}, content_type_id={}, "
-                "object_id={}, field_name={})").format(self.hash, self.shipped,
+        return ("Term(hash={}, posted={}, pending_deletion={}, content_type_id={}, "
+                "object_id={}, field_name={})").format(self.hash, self.posted,
             self.pending_deletion, self.content_type_id, self.object_id,
             self.field_name)
+
+
+    class Meta:
+        unique_together = ('content_type_id', 'object_id', 'field_name')

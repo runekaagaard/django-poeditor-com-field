@@ -19,10 +19,13 @@ class TestPoeditor_com_field(TestCase):
         obj.save()
         self.assertEqual(obj.pk, 1)
 
+        print "CREATING"
+        for link in Link.objects.all():
+            print link
+
         obj.title = "title2"
         obj.save()
-
-        TestModel.objects.create(title="title2")
-
-        for term in Term.objects.all():
-            print term
+        print
+        print "UPDATING"
+        for link in Link.objects.all():
+            print link
