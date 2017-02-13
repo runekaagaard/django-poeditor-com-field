@@ -20,6 +20,8 @@ class TestPoeditor_com_field(TestCase):
         self.assertEqual(Link.objects.count(), 2)
         obj.title = "title3"
         obj.save()
+        for link in Link.objects.all():
+            print link
         self.assertEqual(Link.objects.count(), 2)
 
     def test_links_are_marked_as_posted(self):

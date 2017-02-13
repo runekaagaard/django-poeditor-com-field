@@ -1,12 +1,13 @@
-from hashlib import sha1
 from itertools import izip
+
+from celery.task.base import task
+from poeditor import POEditorAPI
 
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
+from django.db.models import F
 
 from .models import Link
-from celery.task.base import task
-from poeditor import POEditorAPI
 
 __version__ = '0.1.0'
 
@@ -50,16 +51,19 @@ def _post_terms(terms, link_pks):
 
 
 def _save_link(term, instance):
-    hash = sha1(term['value']).hexdigest()
-    return Link.objects.update_or_create(
-        content_type_id=_content_type(instance).pk,
-        object_id=instance.pk,
-        field_name=term['field_name'],
-        defaults=dict(
-            hash=hash,
-            posted=_posted_hash_exists(hash)
+    try:
+        link = Link.objects.get(
+            term=term['value'],
         )
-    )[0]
+        link.count = F('count') + 1
+        link.save()
+    except Link.DoesNotExist:
+        link = Link.objects.create(
+            term=term['value'],
+            count=1,
+        )
+
+    return link
 
 
 def _client():
