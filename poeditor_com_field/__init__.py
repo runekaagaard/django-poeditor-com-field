@@ -1,77 +1,178 @@
-from itertools import izip
+from collections import namedtuple
+from copy import deepcopy
+import json
 
 from celery.task.base import task
-from poeditor import POEditorAPI
+import requests
 
-from django.contrib.contenttypes.models import ContentType
+
 from django.conf import settings
-from django.db.models import F
+from django.db.transaction import atomic
+from django.core.validators import EMPTY_VALUES
 
 from .models import Link
 
 __version__ = '0.1.0'
 
-
-def _terms(instance):
-    return [{
-        'value': getattr(instance, x),
-        'field_name': x,
-        'reference': u"{}-{}-{}".format(instance.__class__.__name__,
-            instance.pk, x),
-    } for x in instance._poeditor_com_field_fields]
+Term = namedtuple('Term', 'field_name,value,reference')
 
 
 def _post_save_signal(sender, created=None, instance=None, **kwargs):
-    update_terms(_terms(instance), instance)
+    update_terms(instance, created)
 
 
-def _content_type(instance):
-    return ContentType.objects.get_for_model(instance)
-
-
-def _posted_hash_exists(hash):
-    return Link.objects.filter(hash=hash, posted=True).exists()
-
-
-@task
-def _post_terms(terms, link_pks):
-    if len(terms) == 0:
-        return
+def _post_init_signal(sender, instance=None, **kwargs):
+    instance._poeditor_com_field_cache = deepcopy(instance)
     
-    _client().add_terms(settings.POEDITOR_PROJECT_ID, [
-        {
-            "term": x['value'],
-            "context": settings.POEDITOR_CONTEXT,
-            "reference": x['reference'],
-            "plural": ""
-        } for x in terms
-    ])
-    Link.objects.filter(pk__in=link_pks, posted=False).update(
-        posted=True)
+
+def _pre_delete_signal(sender, instance=None, **kwargs):
+    remove_terms(instance)
 
 
-def _save_link(term, instance):
+def _link_add(term):
+    Link.objects.select_for_update().filter(term=term)
     try:
         link = Link.objects.get(
-            term=term['value'],
+            term=term.value,
         )
-        link.count = F('count') + 1
+        link.count += 1
+        link.references.replace(term.reference, '')
+        link.references += term.reference
         link.save()
     except Link.DoesNotExist:
         link = Link.objects.create(
-            term=term['value'],
+            term=term.value,
             count=1,
+            references=term.reference,
         )
 
     return link
 
 
-def _client():
-    return POEditorAPI(api_token=settings.POEDITOR_API_TOKEN)
+def _link_subtract(term):
+    Link.objects.select_for_update().filter(term=term)
+    try:
+        link = Link.objects.get(
+            term=term.value,
+        )
+        link.count -= 1
+        link.references.replace(term.reference, '')
+        link.save()
+        return link
+    except Link.DoesNotExist:
+        return None
 
 
-def update_terms(terms, instance):
-    links = [_save_link(x, instance) for x in terms]
-    unposted_terms = [term for link, term in izip(links, terms)
-                      if link.posted is False]
-    _post_terms(unposted_terms, [x.id for x in links])
+def _changed_terms(instance, created):
+    deleted, added = [], []
+    for field_name in instance._poeditor_com_field_fields:
+        
+        if not created:
+            before = make_term(instance._poeditor_com_field_cache, field_name)
+        after = make_term(instance, field_name)
+        
+        if not created and before.value == after.value:
+            continue
+
+        if not created and before.value not in EMPTY_VALUES:
+            deleted.append(before)
+
+        if after.value not in EMPTY_VALUES:
+            added.append(after)
+
+    return deleted, added
+
+
+def make_term(instance, field_name):
+        return Term(
+            field_name,
+            getattr(instance, field_name),
+            u'<{}.{} id={} field={} />'.format(
+                instance._meta.app_label,
+                instance.__class__.__name__, instance.pk, field_name
+            ),
+        )
+
+
+@atomic
+def update_terms(instance, created):
+    deleted, added = _changed_terms(instance, created)
+    modified_link_pks = set()
+    if added:
+        modified_link_pks |= set(_link_add(x).pk for x in added)
+    if deleted:
+        modified_link_pks |= set(_link_subtract(x).pk for x in deleted
+                                 if x is not None)
+
+    sync_links(modified_link_pks)
+
+
+@atomic
+def remove_terms(instance):
+    terms = [make_term(instance, x) for x in instance._poeditor_com_field_fields]
+    modified_link_pks = set(_link_subtract(x).pk for x in terms
+                            if x is not None)
+    sync_links(modified_link_pks)
+
+
+def post(path, data):
+    r = requests.post(
+        'https://api.poeditor.com/v2/' + path,
+        data={
+            'id': settings.POEDITOR_PROJECT_ID,
+            'api_token': settings.POEDITOR_API_TOKEN,
+            'data': json.dumps(data),
+        },
+    )
+    print "\nPOSTING STUFF TO POEDITOR.COM"
+    print "#############################"
+    print "path:", path
+    print "data:", data
+    print "response:", r.json()
+    
+    return r.json()
+        
+
+@task
+def sync_links(link_pks=None):
+    links = Link.objects.all()
+    if link_pks is not None:
+        links = links.filter(pk__in=link_pks)
+
+    if not links:
+        return
+
+    add = links.filter(count__gt=0, posted=False)
+    len(add) # Force evaluation.
+    update = links.filter(count__gt=0, posted=True)
+    len(update) # Force evaluation.
+    delete = links.filter(count__lt=1, posted=True)
+    len(delete) # Force evaluation.
+
+    if add:
+        post('terms/add', [
+            {
+                "term": x.term,
+                "context": settings.POEDITOR_CONTEXT,
+                "reference": x.references,
+            } for x in add
+        ])
+        add.update(posted=True)
+        
+    if update:
+        post('terms/update', [
+            {
+                "term": x.term,
+                "context": settings.POEDITOR_CONTEXT,
+                "reference": x.references,
+            } for x in update
+        ])
+
+    if delete:
+        post('terms/delete', [
+            {
+                "term": x.term,
+                "context": settings.POEDITOR_CONTEXT,
+            } for x in delete
+        ])
+        delete.delete()
