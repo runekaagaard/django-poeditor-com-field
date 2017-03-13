@@ -9,6 +9,7 @@ import requests
 from django.conf import settings
 from django.db.transaction import atomic
 from django.core.validators import EMPTY_VALUES
+from django.db.models.loading import get_models
 
 from .models import Link
 
@@ -17,12 +18,12 @@ __version__ = '0.1.0'
 Term = namedtuple('Term', 'field_name,value,reference')
 
 
-def _post_save_signal(sender, created=None, instance=None, **kwargs):
-    update_terms(instance, created)
-
-
 def _post_init_signal(sender, instance=None, **kwargs):
     instance._poeditor_com_field_cache = deepcopy(instance)
+    
+
+def _post_save_signal(sender, created=None, instance=None, **kwargs):
+    update_terms(instance, created)
     
 
 def _pre_delete_signal(sender, instance=None, **kwargs):
@@ -176,3 +177,35 @@ def sync_links(link_pks=None):
             } for x in delete
         ])
         delete.delete()
+
+
+def sync_existing_models():
+    for model in get_models():
+        try:
+            fields = model._poeditor_com_field_fields
+        except AttributeError:
+            continue
+
+        link_pks = []
+        for obj in model.objects.all():
+            for field in fields:
+                term = make_term(obj, field)
+                Link.objects.select_for_update().filter(term=term)
+                try:
+                    link = Link.objects.get(
+                        term=term.value,
+                    )
+                    if term.reference not in link.references:
+                        link.count += 1
+                        link.references += term.reference
+                        link.save()
+                        link_pks.append(link.pk)
+                except Link.DoesNotExist:
+                    link = Link.objects.create(
+                        term=term.value,
+                        count=1,
+                        references=term.reference,
+                    )
+                    link_pks.append(link.pk)
+
+            sync_links(link_pks)
