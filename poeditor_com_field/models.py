@@ -4,7 +4,7 @@ from django.db import models
 
 
 class Link(models.Model):
-    term = models.CharField(max_length=40, db_index=True, unique=True)
+    term = models.TextField()
     count = models.IntegerField(default=0)
     exists_on_server = models.BooleanField(default=False)
     in_sync_with_server = models.BooleanField(default=False)
