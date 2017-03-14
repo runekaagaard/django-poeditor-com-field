@@ -33,5 +33,5 @@ class PoeditorComTextField(CharField):
             post_init.connect(post_init_signal, sender=cls)
             pre_delete.connect(pre_delete_signal, sender=cls)
 
-        return super(PoeditorComCharField, self).contribute_to_class(
+        return super(PoeditorComTextField, self).contribute_to_class(
             cls, name, *args, **kwargs)
