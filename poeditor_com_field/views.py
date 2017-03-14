@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    DetailView,
-    UpdateView,
-    ListView
-)
+from django.views.generic import (CreateView, DeleteView, DetailView,
+                                  UpdateView, ListView)
 
 from .models import (
-	BloomFilter,
-)
+    BloomFilter, )
 
 
 class BloomFilterCreateView(CreateView):
@@ -35,4 +29,3 @@ class BloomFilterUpdateView(UpdateView):
 class BloomFilterListView(ListView):
 
     model = BloomFilter
-

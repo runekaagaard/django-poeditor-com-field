@@ -8,7 +8,8 @@ class Link(models.Model):
     count = models.IntegerField(default=0)
     posted = models.BooleanField(default=False)
     references = models.TextField()
-    
+
     def __unicode__(self):
-        return ("Term(id={}, term={}, count={}, posted={}, references={})").format(self.pk,
-            self.term, self.count, self.posted, self.references)
+        return (
+            "Term(id={}, term={}, count={}, posted={}, references={})").format(
+                self.pk, self.term, self.count, self.posted, self.references)

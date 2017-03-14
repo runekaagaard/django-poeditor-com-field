@@ -1,7 +1,6 @@
 from django.db.models.fields import CharField
 from django.db.models.signals import post_save, post_init, pre_delete
 
-
 from . import _post_save_signal, _post_init_signal, _pre_delete_signal
 
 
@@ -19,5 +18,5 @@ class PoeditorComCharField(CharField):
             post_init.connect(_post_init_signal, sender=cls)
             pre_delete.connect(_pre_delete_signal, sender=cls)
 
-        return super(PoeditorComCharField, self).contribute_to_class(cls, name,
-            *args, **kwargs)
+        return super(PoeditorComCharField, self).contribute_to_class(
+            cls, name, *args, **kwargs)

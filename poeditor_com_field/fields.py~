@@ -1,0 +1,15 @@
+from django.db.models.fields import CharField
+from django.db.models.signals import post_save
+
+
+class PoeditorComFieldMixin(object):
+    pass
+
+
+class PoeditorComCharField(CharField):
+    def contribute_to_class(self, cls, name, virtual_only=False):
+        post_save
+        print cls, name, virtual_only
+
+        return super(PoeditorComCharField, self).contribute_to_class(cls, name,
+            virtual_only=virtual_only)

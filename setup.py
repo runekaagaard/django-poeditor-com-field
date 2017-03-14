@@ -23,7 +23,6 @@ def get_version(*file_paths):
 
 version = get_version("poeditor_com_field", "__init__.py")
 
-
 if sys.argv[-1] == 'publish':
     try:
         import wheel
@@ -56,7 +55,9 @@ setup(
         'poeditor_com_field',
     ],
     include_package_data=True,
-    install_requires=["django-model-utils>=2.0",],
+    install_requires=[
+        "django-model-utils>=2.0",
+    ],
     license="MIT",
     zip_safe=False,
     keywords='django-poeditor-com-field',
@@ -75,5 +76,4 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
-    ],
-)
+    ], )
