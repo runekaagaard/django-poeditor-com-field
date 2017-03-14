@@ -1,7 +1,7 @@
 from django.db.models.fields import CharField
 from django.db.models.signals import post_save, post_init, pre_delete
 
-from . import _post_save_signal, _post_init_signal, _pre_delete_signal
+from .core import post_save_signal, post_init_signal, pre_delete_signal
 
 
 class PoeditorComFieldMixin(object):
@@ -14,9 +14,9 @@ class PoeditorComCharField(CharField):
             cls._poeditor_com_field_fields.append(name)
         except AttributeError:
             cls._poeditor_com_field_fields = [name]
-            post_save.connect(_post_save_signal, sender=cls)
-            post_init.connect(_post_init_signal, sender=cls)
-            pre_delete.connect(_pre_delete_signal, sender=cls)
+            post_save.connect(post_save_signal, sender=cls)
+            post_init.connect(post_init_signal, sender=cls)
+            pre_delete.connect(pre_delete_signal, sender=cls)
 
         return super(PoeditorComCharField, self).contribute_to_class(
             cls, name, *args, **kwargs)
