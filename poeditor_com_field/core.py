@@ -101,7 +101,7 @@ def update_terms(instance, created):
         modified_link_pks |= set(
             link_subtract(x).pk for x in deleted if x is not None)
 
-    sync_links(modified_link_pks)
+    sync_links(list(modified_link_pks))
 
 
 @atomic
@@ -111,7 +111,7 @@ def remove_terms(instance):
     ]
     modified_link_pks = set(
         link_subtract(x).pk for x in terms if x is not None)
-    sync_links(modified_link_pks)
+    sync_links(list(modified_link_pks))
 
 
 def post(path, data):
