@@ -30,5 +30,4 @@ class TestPackage(TestCase):
         x.title = "niels"
         x.save()
         Link.objects.all().update(in_sync_with_server=False)
-        print "HEREHEREHERE"
         retry_sync_links()
