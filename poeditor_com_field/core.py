@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 from .models import Link
 
-__version__ = '0.1.0'
-
 Term = namedtuple('Term', 'field_name,value,reference')
 
 
