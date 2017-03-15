@@ -120,7 +120,7 @@ def post(path, data):
         data={
             'id': settings.POEDITOR_PROJECT_ID,
             'api_token': settings.POEDITOR_API_TOKEN,
-            'data': json.dumps(data),
+            'data': json.dumps(data).replace("\\r", ""),
         }, )
     try:
         response = r.json()
